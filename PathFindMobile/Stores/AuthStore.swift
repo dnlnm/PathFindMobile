@@ -1,0 +1,80 @@
+import Foundation
+import SwiftUI
+
+@Observable
+final class AuthStore {
+  private(set) var serverURL: String = ""
+  private(set) var apiToken: String = ""
+  private(set) var isConnecting: Bool = false
+  var connectionError: String?
+
+  var isAuthenticated: Bool {
+    !serverURL.isEmpty && !apiToken.isEmpty
+  }
+
+  var maskedToken: String {
+    guard apiToken.count > 8 else { return "••••" }
+    let prefix = String(apiToken.prefix(4))
+    let suffix = String(apiToken.suffix(4))
+    return "\(prefix)•••\(suffix)"
+  }
+
+  private let serverURLKey = "pathfind_server_url"
+  private let apiTokenKey = "pathfind_api_token"
+
+  init() {
+    self.serverURL = UserDefaults.standard.string(forKey: serverURLKey) ?? ""
+    self.apiToken = UserDefaults.standard.string(forKey: apiTokenKey) ?? ""
+  }
+
+  var apiClient: APIClient {
+    let client = APIClient(baseURL: serverURL, apiToken: apiToken)
+    return client
+  }
+
+  func connect(serverURL: String, apiToken: String) async throws {
+    isConnecting = true
+    connectionError = nil
+
+    // Normalize URL
+    var normalizedURL = serverURL.trimmingCharacters(in: .whitespacesAndNewlines)
+    if normalizedURL.hasSuffix("/") {
+      normalizedURL = String(normalizedURL.dropLast())
+    }
+    if !normalizedURL.hasPrefix("http://") && !normalizedURL.hasPrefix("https://") {
+      normalizedURL = "https://\(normalizedURL)"
+    }
+
+    let client = APIClient(baseURL: normalizedURL, apiToken: apiToken)
+
+    do {
+      // Validate by fetching bookmarks (page 1, limit 1)
+      let _: PaginatedBookmarkResponse = try await client.request(
+        endpoint: "/api/bookmarks",
+        queryItems: [
+          URLQueryItem(name: "page", value: "1"),
+          URLQueryItem(name: "limit", value: "1"),
+        ]
+      )
+
+      // Success — persist credentials
+      self.serverURL = normalizedURL
+      self.apiToken = apiToken
+      UserDefaults.standard.set(normalizedURL, forKey: serverURLKey)
+      UserDefaults.standard.set(apiToken, forKey: apiTokenKey)
+      isConnecting = false
+    } catch {
+      isConnecting = false
+      connectionError = error.localizedDescription
+      throw error
+    }
+  }
+
+  func disconnect() {
+    serverURL = ""
+    apiToken = ""
+    UserDefaults.standard.removeObject(forKey: serverURLKey)
+    UserDefaults.standard.removeObject(forKey: apiTokenKey)
+    connectionError = nil
+  }
+}

@@ -1,0 +1,125 @@
+import SwiftUI
+
+struct SettingsView: View {
+  @Environment(AuthStore.self) private var authStore
+  @State private var showDisconnectConfirm = false
+
+  var body: some View {
+    NavigationStack {
+      ZStack {
+        Color.pfBackground.ignoresSafeArea()
+
+        List {
+          // Server Info
+          Section {
+            VStack(alignment: .leading, spacing: 12) {
+              HStack(spacing: 12) {
+                Image(systemName: "server.rack")
+                  .font(.system(size: 24))
+                  .foregroundColor(.pfAccent)
+                  .frame(width: 40, height: 40)
+                  .background(Color.pfAccent.opacity(0.15))
+                  .cornerRadius(10)
+
+                VStack(alignment: .leading, spacing: 2) {
+                  Text("Connected Server")
+                    .font(.caption)
+                    .foregroundColor(.pfTextTertiary)
+                    .textCase(.uppercase)
+
+                  Text(authStore.serverURL)
+                    .font(.subheadline)
+                    .fontWeight(.medium)
+                    .foregroundColor(.pfTextPrimary)
+                    .lineLimit(1)
+                }
+              }
+
+              HStack(spacing: 12) {
+                Image(systemName: "key.fill")
+                  .font(.system(size: 24))
+                  .foregroundColor(.pfSuccess)
+                  .frame(width: 40, height: 40)
+                  .background(Color.pfSuccess.opacity(0.15))
+                  .cornerRadius(10)
+
+                VStack(alignment: .leading, spacing: 2) {
+                  Text("API Token")
+                    .font(.caption)
+                    .foregroundColor(.pfTextTertiary)
+                    .textCase(.uppercase)
+
+                  Text(authStore.maskedToken)
+                    .font(.system(.subheadline, design: .monospaced))
+                    .foregroundColor(.pfTextSecondary)
+                }
+              }
+            }
+            .padding(.vertical, 4)
+            .listRowBackground(Color.pfSurface)
+          } header: {
+            Text("Connection")
+              .foregroundColor(.pfTextTertiary)
+          }
+
+          // Actions
+          Section {
+            Button {
+              showDisconnectConfirm = true
+            } label: {
+              HStack {
+                Image(systemName: "arrow.right.square")
+                Text("Disconnect")
+              }
+              .foregroundColor(.pfDestructive)
+            }
+            .listRowBackground(Color.pfSurface)
+          }
+
+          // About
+          Section {
+            HStack {
+              Text("App Version")
+                .foregroundColor(.pfTextSecondary)
+              Spacer()
+              Text("1.0.0")
+                .foregroundColor(.pfTextTertiary)
+            }
+            .listRowBackground(Color.pfSurface)
+
+            HStack {
+              Text("Built with")
+                .foregroundColor(.pfTextSecondary)
+              Spacer()
+              Text("SwiftUI")
+                .foregroundColor(.pfTextTertiary)
+            }
+            .listRowBackground(Color.pfSurface)
+          } header: {
+            Text("About")
+              .foregroundColor(.pfTextTertiary)
+          }
+        }
+        .listStyle(.insetGrouped)
+        .scrollContentBackground(.hidden)
+      }
+      .navigationTitle("Settings")
+      .navigationBarTitleDisplayMode(.large)
+      .toolbarBackground(Color.pfBackground, for: .navigationBar)
+      .toolbarColorScheme(.dark, for: .navigationBar)
+      .alert("Disconnect?", isPresented: $showDisconnectConfirm) {
+        Button("Cancel", role: .cancel) {}
+        Button("Disconnect", role: .destructive) {
+          authStore.disconnect()
+        }
+      } message: {
+        Text("You'll need to re-enter your server URL and API token to reconnect.")
+      }
+    }
+  }
+}
+
+#Preview {
+  SettingsView()
+    .environment(AuthStore())
+}
