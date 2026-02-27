@@ -1,6 +1,10 @@
 import Foundation
 import SwiftUI
 
+/// Shared App Group suite ID — used by both the main app and the Share Extension
+/// to share the server URL and API token.
+let appGroupSuiteID = "group.pathfind.mobile"
+
 @Observable
 final class AuthStore {
   private(set) var serverURL: String = ""
@@ -22,9 +26,22 @@ final class AuthStore {
   private let serverURLKey = "pathfind_server_url"
   private let apiTokenKey = "pathfind_api_token"
 
+  /// Shared UserDefaults suite so the Share Extension can read these too
+  private var sharedDefaults: UserDefaults {
+    UserDefaults(suiteName: appGroupSuiteID) ?? .standard
+  }
+
   init() {
-    self.serverURL = UserDefaults.standard.string(forKey: serverURLKey) ?? ""
-    self.apiToken = UserDefaults.standard.string(forKey: apiTokenKey) ?? ""
+    self.serverURL = sharedDefaults.string(forKey: serverURLKey) ?? ""
+    self.apiToken = sharedDefaults.string(forKey: apiTokenKey) ?? ""
+
+    // Migration: if credentials exist in standard but not in shared, copy them over
+    if serverURL.isEmpty, let legacy = UserDefaults.standard.string(forKey: serverURLKey) {
+      serverURL = legacy
+      apiToken = UserDefaults.standard.string(forKey: apiTokenKey) ?? ""
+      sharedDefaults.set(serverURL, forKey: serverURLKey)
+      sharedDefaults.set(apiToken, forKey: apiTokenKey)
+    }
   }
 
   var apiClient: APIClient {
@@ -57,9 +74,12 @@ final class AuthStore {
         ]
       )
 
-      // Success — persist credentials
+      // Success — persist credentials to shared suite
       self.serverURL = normalizedURL
       self.apiToken = apiToken
+      sharedDefaults.set(normalizedURL, forKey: serverURLKey)
+      sharedDefaults.set(apiToken, forKey: apiTokenKey)
+      // Also keep in standard for backward compat
       UserDefaults.standard.set(normalizedURL, forKey: serverURLKey)
       UserDefaults.standard.set(apiToken, forKey: apiTokenKey)
       isConnecting = false
@@ -73,6 +93,8 @@ final class AuthStore {
   func disconnect() {
     serverURL = ""
     apiToken = ""
+    sharedDefaults.removeObject(forKey: serverURLKey)
+    sharedDefaults.removeObject(forKey: apiTokenKey)
     UserDefaults.standard.removeObject(forKey: serverURLKey)
     UserDefaults.standard.removeObject(forKey: apiTokenKey)
     connectionError = nil
