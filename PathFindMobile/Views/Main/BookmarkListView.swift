@@ -30,7 +30,6 @@ struct BookmarkListView: View {
       .navigationTitle(navigationTitle)
       .navigationBarTitleDisplayMode(.large)
       .toolbarBackground(Color.pfBackground, for: .navigationBar)
-      .toolbarColorScheme(.dark, for: .navigationBar)
       .toolbar {
         ToolbarItem(placement: .topBarLeading) {
           if store.activeFilterDescription != nil {
@@ -208,8 +207,6 @@ struct BookmarkListView: View {
       }
     }
   }
-
-
 
   // MARK: - Menus
 

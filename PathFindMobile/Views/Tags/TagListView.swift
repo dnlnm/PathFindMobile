@@ -78,7 +78,6 @@ struct TagListView: View {
       .navigationTitle("Tags")
       .navigationBarTitleDisplayMode(.large)
       .toolbarBackground(Color.pfBackground, for: .navigationBar)
-      .toolbarColorScheme(.dark, for: .navigationBar)
     }
     .task {
       await store.loadTags()

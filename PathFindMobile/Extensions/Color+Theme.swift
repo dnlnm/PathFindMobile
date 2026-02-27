@@ -1,16 +1,52 @@
 import SwiftUI
 
+private func adaptive(light: UIColor, dark: UIColor) -> Color {
+  Color(UIColor { $0.userInterfaceStyle == .dark ? dark : light })
+}
+
 extension Color {
-  // MARK: - Brand Colors
-  static let pfAccent = Color(red: 0.4, green: 0.55, blue: 1.0)  // Soft blue accent
+  // MARK: - Brand Colors (adaptive light / dark)
+  static let pfAccent = Color(red: 0.4, green: 0.55, blue: 1.0)  // same in both modes
   static let pfAccentLight = Color(red: 0.55, green: 0.7, blue: 1.0)
-  static let pfBackground = Color(red: 0.07, green: 0.07, blue: 0.09)  // Near-black bg
-  static let pfSurface = Color(red: 0.11, green: 0.11, blue: 0.14)  // Card surfaces
-  static let pfSurfaceLight = Color(red: 0.15, green: 0.15, blue: 0.19)  // Elevated surface
-  static let pfBorder = Color(white: 0.2)
-  static let pfTextPrimary = Color(white: 0.95)
-  static let pfTextSecondary = Color(white: 0.6)
-  static let pfTextTertiary = Color(white: 0.4)
+
+  /// Page / window background
+  static let pfBackground = adaptive(
+    light: UIColor(white: 0.96, alpha: 1),
+    dark: UIColor(white: 0.0, alpha: 1)  // pure black
+  )
+
+  /// Card / list row surface
+  static let pfSurface = adaptive(
+    light: UIColor(white: 1.0, alpha: 1),
+    dark: UIColor(white: 0.07, alpha: 1)  // near-black card
+  )
+
+  /// Elevated surface (modals, popovers)
+  static let pfSurfaceLight = adaptive(
+    light: UIColor(white: 0.92, alpha: 1),
+    dark: UIColor(white: 0.12, alpha: 1)  // slightly elevated
+  )
+
+  static let pfBorder = adaptive(
+    light: UIColor(white: 0.82, alpha: 1),
+    dark: UIColor(white: 0.15, alpha: 1)  // subtle border on black
+  )
+
+  static let pfTextPrimary = adaptive(
+    light: UIColor(white: 0.08, alpha: 1),
+    dark: UIColor(white: 0.95, alpha: 1)
+  )
+
+  static let pfTextSecondary = adaptive(
+    light: UIColor(white: 0.35, alpha: 1),
+    dark: UIColor(white: 0.6, alpha: 1)
+  )
+
+  static let pfTextTertiary = adaptive(
+    light: UIColor(white: 0.55, alpha: 1),
+    dark: UIColor(white: 0.4, alpha: 1)
+  )
+
   static let pfDestructive = Color(red: 0.95, green: 0.3, blue: 0.3)
   static let pfSuccess = Color(red: 0.3, green: 0.85, blue: 0.5)
   static let pfWarning = Color(red: 1.0, green: 0.75, blue: 0.3)

@@ -281,7 +281,6 @@ struct BookmarkDetailView: View {
       }
       .navigationBarTitleDisplayMode(.inline)
       .toolbarBackground(Color.pfBackground, for: .navigationBar)
-      .toolbarColorScheme(.dark, for: .navigationBar)
       .toolbar {
         ToolbarItem(placement: .topBarTrailing) {
           Button {

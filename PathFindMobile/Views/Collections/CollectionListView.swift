@@ -83,7 +83,6 @@ struct CollectionListView: View {
       .navigationTitle("Collections")
       .navigationBarTitleDisplayMode(.large)
       .toolbarBackground(Color.pfBackground, for: .navigationBar)
-      .toolbarColorScheme(.dark, for: .navigationBar)
     }
     .task {
       await store.loadCollections()

@@ -181,7 +181,6 @@ struct AddBookmarkView: View {
       .navigationTitle("Add Bookmark")
       .navigationBarTitleDisplayMode(.inline)
       .toolbarBackground(Color.pfBackground, for: .navigationBar)
-      .toolbarColorScheme(.dark, for: .navigationBar)
       .toolbar {
         ToolbarItem(placement: .cancellationAction) {
           Button("Cancel") { dismiss() }

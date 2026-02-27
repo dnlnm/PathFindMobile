@@ -3,6 +3,7 @@ import SwiftUI
 @main
 struct PathFindMobileApp: App {
   @State private var authStore = AuthStore()
+  @AppStorage("appearanceSetting") private var appearanceSetting: AppearanceSetting = .dark
 
   var body: some Scene {
     WindowGroup {
@@ -14,7 +15,7 @@ struct PathFindMobileApp: App {
         }
       }
       .environment(authStore)
-      .preferredColorScheme(.dark)
+      .preferredColorScheme(appearanceSetting.colorScheme)
     }
   }
 }
