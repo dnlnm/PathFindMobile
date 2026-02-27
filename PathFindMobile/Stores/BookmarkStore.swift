@@ -64,6 +64,13 @@ final class BookmarkStore {
   var searchQuery: String = ""
   var selectedTab: Int = 0
 
+  // MARK: - Search (Search Tab)
+  var searchResults: [Bookmark] = []
+  var searchCurrentPage: Int = 1
+  var searchTotalPages: Int = 1
+  var isSearchLoading: Bool = false
+  var isSearchLoadingMore: Bool = false
+
   // Filter by tag or collection
   var filterTag: String?
   var filterCollectionId: String?
@@ -155,6 +162,61 @@ final class BookmarkStore {
   @MainActor
   func refresh() async {
     await loadBookmarks(reset: true)
+  }
+
+  // MARK: - Search Tab
+
+  @MainActor
+  func runSearch(reset: Bool = true) async {
+    guard let service, !searchQuery.isEmpty else { return }
+
+    if reset {
+      searchCurrentPage = 1
+      isSearchLoading = true
+    } else {
+      isSearchLoadingMore = true
+    }
+
+    do {
+      let response = try await service.fetchBookmarks(
+        filter: BookmarkFilter.all.rawValue,
+        query: searchQuery,
+        tag: nil,
+        collection: nil,
+        sort: BookmarkSort.newest.rawValue,
+        page: searchCurrentPage
+      )
+
+      if reset {
+        searchResults = response.bookmarks
+      } else {
+        var merged = searchResults
+        merged.append(contentsOf: response.bookmarks)
+        searchResults = merged
+      }
+
+      searchTotalPages = response.totalPages
+      isSearchLoading = false
+      isSearchLoadingMore = false
+    } catch {
+      self.error = error.localizedDescription
+      isSearchLoading = false
+      isSearchLoadingMore = false
+    }
+  }
+
+  @MainActor
+  func clearSearchResults() {
+    searchResults = []
+    searchCurrentPage = 1
+    searchTotalPages = 1
+  }
+
+  @MainActor
+  func loadNextSearchPage() async {
+    guard searchCurrentPage < searchTotalPages, !isSearchLoadingMore else { return }
+    searchCurrentPage += 1
+    await runSearch(reset: false)
   }
 
   // MARK: - Actions

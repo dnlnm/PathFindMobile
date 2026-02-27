@@ -7,46 +7,37 @@ struct MainTabView: View {
   var body: some View {
     @Bindable var store = bookmarkStore
     TabView(selection: $store.selectedTab) {
-      BookmarkListView()
-        .tabItem {
-          Label("Bookmarks", systemImage: "bookmark.fill")
-        }
-        .tag(0)
+      Tab("Bookmarks", systemImage: "bookmark.fill", value: 0) {
+        BookmarkListView()
+      }
 
-      CollectionListView()
-        .tabItem {
-          Label("Collections", systemImage: "folder.fill")
-        }
-        .tag(1)
+      Tab("Collections", systemImage: "folder.fill", value: 1) {
+        CollectionListView()
+      }
 
-      TagListView()
-        .tabItem {
-          Label("Tags", systemImage: "tag.fill")
-        }
-        .tag(2)
+      Tab("Tags", systemImage: "tag.fill", value: 2) {
+        TagListView()
+      }
 
-      SettingsView()
-        .tabItem {
-          Label("Settings", systemImage: "gearshape.fill")
-        }
-        .tag(3)
+      Tab("Settings", systemImage: "gearshape.fill", value: 3) {
+        SettingsView()
+      }
+
+      // iOS 26: dedicated search tab – system auto-applies magnifying glass
+      // icon, "Search" title, and pins it to the trailing edge of the tab bar.
+      Tab(value: 4, role: .search) {
+        SearchView()
+      }
     }
+    .tabViewSearchActivation(.searchTabSelection)
+    .tabBarMinimizeBehavior(.onScrollDown)
     .environment(bookmarkStore)
     .tint(.pfAccent)
     .onAppear {
-      configureTabBarAppearance()
       let client = authStore.apiClient
       let service = BookmarkService(client: client)
       bookmarkStore.configure(service: service)
     }
-  }
-
-  private func configureTabBarAppearance() {
-    let appearance = UITabBarAppearance()
-    appearance.configureWithOpaqueBackground()
-    appearance.backgroundColor = UIColor(Color.pfSurface)
-    UITabBar.appearance().standardAppearance = appearance
-    UITabBar.appearance().scrollEdgeAppearance = appearance
   }
 }
 

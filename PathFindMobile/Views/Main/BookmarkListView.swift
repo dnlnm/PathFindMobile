@@ -5,10 +5,12 @@ struct BookmarkListView: View {
   @Environment(AuthStore.self) private var authStore
   @Environment(BookmarkStore.self) private var store
   @AppStorage("openInExternalBrowser") private var openInExternalBrowser = false
+  @AppStorage("bookmarkViewStyle") private var isCardView = true
 
   @State private var showAddBookmark = false
   @State private var safariURL: URL?
   @State private var selectedBookmark: Bookmark?
+  @State private var bookmarkToDelete: Bookmark?
 
   var body: some View {
     @Bindable var store = store
@@ -42,27 +44,32 @@ struct BookmarkListView: View {
           }
         }
 
-        ToolbarItem(placement: .topBarTrailing) {
-          HStack(spacing: 12) {
-            sortMenu
-            filterMenu
-            Button {
-              showAddBookmark = true
-            } label: {
-              Image(systemName: "plus")
-                .fontWeight(.semibold)
-                .foregroundColor(.pfAccent)
+        // Group 1: view toggle + sort + filter
+        ToolbarItemGroup(placement: .topBarTrailing) {
+          Button {
+            withAnimation(.easeInOut(duration: 0.2)) {
+              isCardView.toggle()
             }
+          } label: {
+            Image(systemName: isCardView ? "list.bullet" : "rectangle.grid.1x2")
+              .foregroundColor(.pfTextSecondary)
           }
+
+          sortMenu
+          filterMenu
         }
-      }
-      .searchable(text: $store.searchQuery, prompt: "Search bookmarks...")
-      .onSubmit(of: .search) {
-        Task { await store.loadBookmarks(reset: true) }
-      }
-      .onChange(of: store.searchQuery) { oldValue, newValue in
-        if newValue.isEmpty && !oldValue.isEmpty {
-          Task { await store.loadBookmarks(reset: true) }
+
+        ToolbarSpacer(.fixed, placement: .topBarTrailing)
+
+        // Group 2: add bookmark — rendered as a separate Liquid Glass pill
+        ToolbarItemGroup(placement: .topBarTrailing) {
+          Button {
+            showAddBookmark = true
+          } label: {
+            Image(systemName: "plus")
+              .fontWeight(.semibold)
+              .foregroundColor(.pfAccent)
+          }
         }
       }
       .sheet(isPresented: $showAddBookmark) {
@@ -82,6 +89,29 @@ struct BookmarkListView: View {
             .ignoresSafeArea()
         }
       }
+      .alert(
+        "Delete Bookmark?",
+        isPresented: Binding(
+          get: { bookmarkToDelete != nil },
+          set: { if !$0 { bookmarkToDelete = nil } }
+        )
+      ) {
+        Button("Cancel", role: .cancel) { bookmarkToDelete = nil }
+        Button("Delete", role: .destructive) {
+          if let bookmark = bookmarkToDelete {
+            Task {
+              await store.deleteBookmark(id: bookmark.id)
+              bookmarkToDelete = nil
+            }
+          }
+        }
+      } message: {
+        if let bookmark = bookmarkToDelete {
+          Text(
+            "\"\(bookmark.title ?? bookmark.domain)\" will be permanently deleted. This action cannot be undone."
+          )
+        }
+      }
     }
     .task {
       if store.bookmarks.isEmpty {
@@ -99,73 +129,76 @@ struct BookmarkListView: View {
     return "Bookmarks"
   }
 
+  // MARK: - Bookmark list (card or compact depending on isCardView)
+
   private var bookmarkList: some View {
+    Group {
+      if isCardView {
+        cardList
+      } else {
+        compactList
+      }
+    }
+  }
+
+  // Card layout — List with invisible row chrome so cards look floating
+  // (swipeActions only work inside List, not ScrollView)
+  private var cardList: some View {
     List {
       ForEach(store.bookmarks) { bookmark in
         BookmarkRowView(bookmark: bookmark, serverURL: authStore.serverURL)
-          .listRowBackground(Color.pfBackground)
-          .listRowSeparatorTint(.pfBorder)
-          .contentShape(Rectangle())
-          .onTapGesture {
-            guard let url = URL(string: bookmark.url) else { return }
-            if openInExternalBrowser {
-              UIApplication.shared.open(url)
-            } else {
-              safariURL = url
-            }
-          }
-          .onLongPressGesture {
-            // Long press → show detail sheet
-            selectedBookmark = bookmark
-          }
-          .swipeActions(edge: .trailing, allowsFullSwipe: true) {
-            Button(role: .destructive) {
-              Task { await store.deleteBookmark(id: bookmark.id) }
-            } label: {
-              Label("Delete", systemImage: "trash")
-            }
-
-            Button {
-              Task { await store.toggleArchive(bookmark: bookmark) }
-            } label: {
-              Label(
-                bookmark.isArchived ? "Unarchive" : "Archive",
-                systemImage: bookmark.isArchived ? "tray.and.arrow.up" : "archivebox"
-              )
-            }
-            .tint(.pfWarning)
-          }
-          .swipeActions(edge: .leading) {
-            Button {
-              selectedBookmark = bookmark
-            } label: {
-              Label("Detail", systemImage: "info.circle")
-            }
-            .tint(.pfSurfaceLight)
-
-            Button {
-              Task { await store.toggleReadLater(bookmark: bookmark) }
-            } label: {
-              Label(
-                bookmark.isReadLater ? "Remove" : "Read Later",
-                systemImage: bookmark.isReadLater ? "bookmark.slash" : "bookmark"
-              )
-            }
-            .tint(.pfAccent)
-          }
-          .onAppear {
-            // Infinite scroll
-            if bookmark.id == store.bookmarks.last?.id {
-              Task { await store.loadNextPage() }
-            }
-          }
+          .listRowBackground(Color.clear)
+          .listRowSeparator(.hidden)
+          .listRowInsets(EdgeInsets(top: 6, leading: 16, bottom: 6, trailing: 16))
+          .modifier(
+            BookmarkActionsModifier(
+              bookmark: bookmark,
+              openInExternalBrowser: openInExternalBrowser,
+              safariURL: $safariURL,
+              selectedBookmark: $selectedBookmark,
+              bookmarkToDelete: $bookmarkToDelete,
+              store: store
+            ))
       }
 
       if store.isLoadingMore {
         HStack {
           Spacer()
-          ProgressView()
-            .tint(.pfAccent)
+          ProgressView().tint(.pfAccent)
+          Spacer()
+        }
+        .listRowBackground(Color.clear)
+        .listRowSeparator(.hidden)
+      }
+    }
+    .listStyle(.plain)
+    .scrollContentBackground(.hidden)
+    .refreshable { await store.refresh() }
+  }
+
+  // Compact layout — plain List with row separators
+  private var compactList: some View {
+    List {
+      ForEach(store.bookmarks) { bookmark in
+        BookmarkCompactRowView(bookmark: bookmark, serverURL: authStore.serverURL)
+          .listRowBackground(Color.pfBackground)
+          .listRowSeparatorTint(.pfBorder)
+          .contentShape(Rectangle())
+          .modifier(
+            BookmarkActionsModifier(
+              bookmark: bookmark,
+              openInExternalBrowser: openInExternalBrowser,
+              safariURL: $safariURL,
+              selectedBookmark: $selectedBookmark,
+              bookmarkToDelete: $bookmarkToDelete,
+              store: store
+            ))
+      }
+
+      if store.isLoadingMore {
+        HStack {
+          Spacer()
+          ProgressView().tint(.pfAccent)
           Spacer()
         }
         .listRowBackground(Color.pfBackground)
@@ -173,9 +206,7 @@ struct BookmarkListView: View {
     }
     .listStyle(.plain)
     .scrollContentBackground(.hidden)
-    .refreshable {
-      await store.refresh()
-    }
+    .refreshable { await store.refresh() }
   }
 
   private var emptyState: some View {
@@ -187,12 +218,6 @@ struct BookmarkListView: View {
       Text("No bookmarks found")
         .font(.headline)
         .foregroundColor(.pfTextSecondary)
-
-      if !store.searchQuery.isEmpty {
-        Text("Try a different search term")
-          .font(.subheadline)
-          .foregroundColor(.pfTextTertiary)
-      }
 
       Button {
         showAddBookmark = true
@@ -252,6 +277,74 @@ struct BookmarkListView: View {
       Image(systemName: "line.3.horizontal.decrease.circle")
         .foregroundColor(.pfTextSecondary)
     }
+  }
+}
+
+// MARK: - Bookmark Interactions Modifier
+
+/// Bundles tap / long-press / swipe actions so they work identically
+/// in both the card layout and the compact list layout.
+struct BookmarkActionsModifier: ViewModifier {
+  let bookmark: Bookmark
+  let openInExternalBrowser: Bool
+  @Binding var safariURL: URL?
+  @Binding var selectedBookmark: Bookmark?
+  @Binding var bookmarkToDelete: Bookmark?
+  let store: BookmarkStore
+
+  func body(content: Content) -> some View {
+    content
+      .onTapGesture {
+        guard let url = URL(string: bookmark.url) else { return }
+        if openInExternalBrowser {
+          UIApplication.shared.open(url)
+        } else {
+          safariURL = url
+        }
+      }
+      .onLongPressGesture {
+        selectedBookmark = bookmark
+      }
+      .swipeActions(edge: .trailing, allowsFullSwipe: false) {
+        Button(role: .destructive) {
+          bookmarkToDelete = bookmark  // ← bubble up; alert lives in parent
+        } label: {
+          Label("Delete", systemImage: "trash")
+        }
+
+        Button {
+          Task { await store.toggleArchive(bookmark: bookmark) }
+        } label: {
+          Label(
+            bookmark.isArchived ? "Unarchive" : "Archive",
+            systemImage: bookmark.isArchived ? "tray.and.arrow.up" : "archivebox"
+          )
+        }
+        .tint(.pfWarning)
+      }
+      .swipeActions(edge: .leading) {
+        Button {
+          selectedBookmark = bookmark
+        } label: {
+          Label("Detail", systemImage: "info.circle")
+        }
+        .tint(.pfSurfaceLight)
+
+        Button {
+          Task { await store.toggleReadLater(bookmark: bookmark) }
+        } label: {
+          Label(
+            bookmark.isReadLater ? "Remove" : "Read Later",
+            systemImage: bookmark.isReadLater ? "bookmark.slash" : "bookmark"
+          )
+        }
+        .tint(.pfAccent)
+      }
+      .onAppear {
+        if bookmark.id == store.bookmarks.last?.id {
+          Task { await store.loadNextPage() }
+        }
+      }
   }
 }
 
