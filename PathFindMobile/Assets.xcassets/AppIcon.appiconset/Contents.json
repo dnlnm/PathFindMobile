@@ -1,7 +1,7 @@
 {
   "images" : [
     {
-      "filename" : "pathfindlight.png",
+      "filename" : "pathfinddarkkk.png",
       "idiom" : "universal",
       "platform" : "ios",
       "size" : "1024x1024"
@@ -13,7 +13,7 @@
           "value" : "dark"
         }
       ],
-      "filename" : "pathfinddark.png",
+      "filename" : "pathfindblank.png",
       "idiom" : "universal",
       "platform" : "ios",
       "size" : "1024x1024"
