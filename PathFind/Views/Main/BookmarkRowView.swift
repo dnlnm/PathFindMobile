@@ -4,6 +4,9 @@ struct BookmarkRowView: View {
   let bookmark: Bookmark
   let serverURL: String
 
+  @AppStorage("nsfwDisplayMode") private var nsfwDisplayMode: NsfwDisplayMode = .blur
+  @State private var isRevealed = false
+
   private var hasThumbnail: Bool {
     guard let t = bookmark.thumbnail else { return false }
     return !t.isEmpty
@@ -14,13 +17,36 @@ struct BookmarkRowView: View {
 
       // ── Thumbnail banner (always shown — real image or dynamic) ──────
       if hasThumbnail {
-        BookmarkThumbnailView(
-          rawValue: bookmark.thumbnail,
-          serverURL: serverURL,
-          domain: bookmark.domain,
-          title: bookmark.title,
-          favicon: bookmark.favicon
-        )
+        ZStack(alignment: .topTrailing) {
+          BookmarkThumbnailView(
+            rawValue: bookmark.thumbnail,
+            serverURL: serverURL,
+            domain: bookmark.domain,
+            title: bookmark.title,
+            favicon: bookmark.favicon
+          )
+          .blur(
+            radius: (bookmark.isNsfw == true && !isRevealed && nsfwDisplayMode == .blur) ? 20 : 0
+          )
+          .scaleEffect(
+            (bookmark.isNsfw == true && !isRevealed && nsfwDisplayMode == .blur) ? 1.1 : 1.0)
+
+          if bookmark.isNsfw == true && !isRevealed && nsfwDisplayMode == .blur {
+            Button {
+              withAnimation {
+                isRevealed.toggle()
+              }
+            } label: {
+              Image(systemName: "eye")
+                .font(.system(size: 14))
+                .foregroundColor(.white)
+                .padding(8)
+                .background(Color.black.opacity(0.5))
+                .clipShape(Circle())
+            }
+            .padding(8)
+          }
+        }
         .frame(maxWidth: .infinity)
         .frame(height: 140)
         .clipped()
@@ -59,9 +85,18 @@ struct BookmarkRowView: View {
         }
 
         // Tags
-        if !bookmark.tags.isEmpty || bookmark.isReadLater {
+        if !bookmark.tags.isEmpty || bookmark.isReadLater || bookmark.isNsfw == true {
           ScrollView(.horizontal, showsIndicators: false) {
             HStack(spacing: 6) {
+              if bookmark.isNsfw == true {
+                Label("NSFW", systemImage: "eye.slash")
+                  .font(.system(size: 9, weight: .semibold))
+                  .foregroundColor(.pfDestructive)
+                  .padding(.horizontal, 6)
+                  .padding(.vertical, 3)
+                  .background(Color.pfDestructive.opacity(0.15))
+                  .cornerRadius(5)
+              }
               if bookmark.isReadLater {
                 Label("Later", systemImage: "bookmark.fill")
                   .font(.system(size: 9, weight: .semibold))
@@ -107,6 +142,9 @@ struct BookmarkCompactRowView: View {
   let bookmark: Bookmark
   let serverURL: String
 
+  @AppStorage("nsfwDisplayMode") private var nsfwDisplayMode: NsfwDisplayMode = .blur
+  @State private var isRevealed = false
+
   var body: some View {
     HStack(spacing: 12) {
       // Left: text content
@@ -139,9 +177,18 @@ struct BookmarkCompactRowView: View {
         }
 
         // Tags
-        if !bookmark.tags.isEmpty || bookmark.isReadLater {
+        if !bookmark.tags.isEmpty || bookmark.isReadLater || bookmark.isNsfw == true {
           ScrollView(.horizontal, showsIndicators: false) {
             HStack(spacing: 6) {
+              if bookmark.isNsfw == true {
+                Label("NSFW", systemImage: "eye.slash")
+                  .font(.system(size: 9, weight: .semibold))
+                  .foregroundColor(.pfDestructive)
+                  .padding(.horizontal, 6)
+                  .padding(.vertical, 3)
+                  .background(Color.pfDestructive.opacity(0.15))
+                  .cornerRadius(5)
+              }
               if bookmark.isReadLater {
                 Label("Later", systemImage: "bookmark.fill")
                   .font(.system(size: 9, weight: .semibold))
@@ -171,13 +218,34 @@ struct BookmarkCompactRowView: View {
       }
 
       // Right: small thumbnail
-      BookmarkThumbnailView(
-        rawValue: bookmark.thumbnail,
-        serverURL: serverURL,
-        domain: bookmark.domain,
-        title: bookmark.title,
-        favicon: bookmark.favicon
-      )
+      ZStack(alignment: .topTrailing) {
+        BookmarkThumbnailView(
+          rawValue: bookmark.thumbnail,
+          serverURL: serverURL,
+          domain: bookmark.domain,
+          title: bookmark.title,
+          favicon: bookmark.favicon
+        )
+        .blur(radius: (bookmark.isNsfw == true && !isRevealed && nsfwDisplayMode == .blur) ? 10 : 0)
+        .scaleEffect(
+          (bookmark.isNsfw == true && !isRevealed && nsfwDisplayMode == .blur) ? 1.1 : 1.0)
+
+        if bookmark.isNsfw == true && !isRevealed && nsfwDisplayMode == .blur {
+          Button {
+            withAnimation {
+              isRevealed.toggle()
+            }
+          } label: {
+            Image(systemName: "eye")
+              .font(.system(size: 10))
+              .foregroundColor(.white)
+              .padding(6)
+              .background(Color.black.opacity(0.5))
+              .clipShape(Circle())
+          }
+          .padding(4)
+        }
+      }
       .frame(width: 68, height: 68)
       .cornerRadius(10)
       .clipped()

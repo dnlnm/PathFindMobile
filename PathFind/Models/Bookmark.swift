@@ -10,6 +10,7 @@ struct Bookmark: Codable, Identifiable {
   let thumbnail: String?
   let isArchived: Bool
   let isReadLater: Bool
+  let isNsfw: Bool?
   let createdAt: String
   let updatedAt: String
   let userId: String
@@ -50,6 +51,7 @@ struct BookmarkCreateRequest: Encodable {
   var tags: [String]?
   var collections: [String]?
   var isReadLater: Bool?
+  var isNsfw: Bool?
 }
 
 struct BookmarkUpdateRequest: Encodable {
@@ -60,6 +62,7 @@ struct BookmarkUpdateRequest: Encodable {
   var collections: [String]?
   var isArchived: Bool?
   var isReadLater: Bool?
+  var isNsfw: Bool?
 }
 
 extension ISO8601DateFormatter {

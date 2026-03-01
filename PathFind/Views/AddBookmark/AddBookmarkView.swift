@@ -11,6 +11,7 @@ struct AddBookmarkView: View {
   @State private var tags: [String] = []
   @State private var selectedCollectionId: String?
   @State private var isReadLater: Bool = false
+  @State private var isNsfw: Bool = false
   @State private var isSaving: Bool = false
   @State private var errorMessage: String?
 
@@ -167,6 +168,18 @@ struct AddBookmarkView: View {
             .tint(.pfAccent)
             .padding(.horizontal, 4)
 
+            // NSFW Content Toggle
+            Toggle(isOn: $isNsfw) {
+              HStack {
+                Image(systemName: "eye.slash")
+                  .foregroundColor(.pfDestructive)
+                Text("NSFW Content")
+                  .foregroundColor(.pfTextPrimary)
+              }
+            }
+            .tint(.pfDestructive)
+            .padding(.horizontal, 4)
+
             // Error Message
             if let error = errorMessage {
               Text(error)
@@ -231,6 +244,7 @@ struct AddBookmarkView: View {
     request.tags = tags.isEmpty ? nil : tags
     request.collections = selectedCollectionId.map { [$0] }
     request.isReadLater = isReadLater
+    request.isNsfw = isNsfw
 
     do {
       let _ = try await service.createBookmark(request)

@@ -12,8 +12,8 @@
 	"argv": [
 		"/usr/local/bin/xcode-build-server"
 	],
-	"workspace": "/Users/dnlnm/Documents/PathFindMobile/PathFindMobile.xcodeproj/project.xcworkspace",
-	"build_root": "/Users/dnlnm/Library/Developer/Xcode/DerivedData/PathFindMobile-bvxefqgzmnbcxwfurxmcuiqhvuws",
-	"scheme": "PathFindMobile",
+	"workspace": "/Users/dnlnm/Documents/pathfind-ios/PathFind.xcodeproj/project.xcworkspace",
+	"build_root": "/Users/dnlnm/Library/Developer/Xcode/DerivedData/PathFind-fhaeybwndyxjroadepxsigtdxiwg",
+	"scheme": "PathFind",
 	"kind": "xcode"
 }

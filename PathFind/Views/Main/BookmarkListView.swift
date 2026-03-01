@@ -6,6 +6,7 @@ struct BookmarkListView: View {
   @Environment(BookmarkStore.self) private var store
   @AppStorage("openInExternalBrowser") private var openInExternalBrowser = false
   @AppStorage("bookmarkViewStyle") private var isCardView = true
+  @AppStorage("nsfwDisplayMode") private var nsfwDisplayMode: NsfwDisplayMode = .blur
 
   @State private var showAddBookmark = false
   @State private var safariURL: URL?
@@ -141,11 +142,18 @@ struct BookmarkListView: View {
     }
   }
 
+  private var visibleBookmarks: [Bookmark] {
+    if nsfwDisplayMode == .hide {
+      return store.bookmarks.filter { $0.isNsfw != true }
+    }
+    return store.bookmarks
+  }
+
   // Card layout — List with invisible row chrome so cards look floating
   // (swipeActions only work inside List, not ScrollView)
   private var cardList: some View {
     List {
-      ForEach(store.bookmarks) { bookmark in
+      ForEach(visibleBookmarks) { bookmark in
         BookmarkRowView(bookmark: bookmark, serverURL: authStore.serverURL)
           .listRowBackground(Color.clear)
           .listRowSeparator(.hidden)
@@ -179,7 +187,7 @@ struct BookmarkListView: View {
   // Compact layout — plain List with row separators
   private var compactList: some View {
     List {
-      ForEach(store.bookmarks) { bookmark in
+      ForEach(visibleBookmarks) { bookmark in
         BookmarkCompactRowView(bookmark: bookmark, serverURL: authStore.serverURL)
           .listRowBackground(Color.pfBackground)
           .listRowSeparatorTint(.pfBorder)

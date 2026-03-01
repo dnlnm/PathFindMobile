@@ -4,6 +4,7 @@ struct SettingsView: View {
   @Environment(AuthStore.self) private var authStore
   @AppStorage("openInExternalBrowser") private var openInExternalBrowser = false
   @AppStorage("appearanceSetting") private var appearanceSetting: AppearanceSetting = .dark
+  @AppStorage("nsfwDisplayMode") private var nsfwDisplayMode: NsfwDisplayMode = .blur
   @State private var showDisconnectConfirm = false
 
   var body: some View {
@@ -111,6 +112,38 @@ struct SettingsView: View {
             .listRowBackground(Color.pfSurface)
           } header: {
             Text("Appearance")
+              .foregroundColor(.pfTextTertiary)
+          }
+
+          // NSFW Content
+          Section {
+            VStack(alignment: .leading, spacing: 12) {
+              HStack(spacing: 12) {
+                Image(systemName: "eye.slash.circle.fill")
+                  .font(.system(size: 18))
+                  .foregroundColor(.pfAccent)
+                  .frame(width: 28)
+                VStack(alignment: .leading, spacing: 2) {
+                  Text("NSFW Content")
+                    .foregroundColor(.pfTextPrimary)
+                  Text(nsfwDisplayMode.label)
+                    .font(.caption)
+                    .foregroundColor(.pfTextTertiary)
+                }
+              }
+
+              Picker("", selection: $nsfwDisplayMode) {
+                ForEach(NsfwDisplayMode.allCases, id: \.self) { option in
+                  Label(option.label, systemImage: option.icon)
+                    .tag(option)
+                }
+              }
+              .pickerStyle(.segmented)
+            }
+            .padding(.vertical, 4)
+            .listRowBackground(Color.pfSurface)
+          } header: {
+            Text("Content")
               .foregroundColor(.pfTextTertiary)
           }
 
