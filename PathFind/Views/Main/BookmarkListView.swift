@@ -249,17 +249,12 @@ struct BookmarkListView: View {
         Button {
           Task { await store.setSort(sortOption) }
         } label: {
-          Label {
-            Text(sortOption.label)
-          } icon: {
-            if store.sort == sortOption {
-              Image(systemName: "checkmark")
-            }
-          }
+          Label(sortOption.label, systemImage: sortOption.icon)
+            .symbolVariant(store.sort == sortOption ? .fill : .none)
         }
       }
     } label: {
-      Image(systemName: "arrow.up.arrow.down")
+      Image(systemName: store.sort.icon)
         .foregroundColor(.pfTextSecondary)
     }
   }
@@ -270,19 +265,14 @@ struct BookmarkListView: View {
         Button {
           Task { await store.setFilter(filterOption) }
         } label: {
-          Label {
-            Text(filterOption.label)
-          } icon: {
-            if store.filter == filterOption && store.filterTag == nil
-              && store.filterCollectionId == nil
-            {
-              Image(systemName: "checkmark")
-            }
-          }
+          Label(filterOption.label, systemImage: filterOption.icon)
+            .symbolVariant(
+              store.filter == filterOption && store.filterTag == nil
+                && store.filterCollectionId == nil ? .fill : .none)
         }
       }
     } label: {
-      Image(systemName: "line.3.horizontal.decrease.circle")
+      Image(systemName: store.filter.icon)
         .foregroundColor(.pfTextSecondary)
     }
   }

@@ -17,7 +17,7 @@ enum BookmarkFilter: String, CaseIterable {
   var icon: String {
     switch self {
     case .all: return "tray.full"
-    case .readLater: return "bookmark"
+    case .readLater: return "clock"
     case .archived: return "archivebox"
     }
   }
@@ -42,8 +42,8 @@ enum BookmarkSort: String, CaseIterable {
     switch self {
     case .newest: return "arrow.down"
     case .oldest: return "arrow.up"
-    case .titleAsc: return "textformat.abc"
-    case .titleDesc: return "textformat.abc"
+    case .titleAsc: return "a.circle"
+    case .titleDesc: return "z.circle"
     }
   }
 }
